@@ -25,7 +25,7 @@ def log(text):
 def final():
     global printtime    
     printtime = False
-    log(words[u'text'][u'bye'].format(len(added))) 
+    log(words[u'text'][u'bye'].format(added)) 
  
 #%%  API Function
 
@@ -60,7 +60,7 @@ config.read(u'rfu.conf')
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[2:],"hqd:",["help","quiet","data="])
+        opts, args = getopt.getopt(sys.argv[1:],"hqd:",["help","quiet","data="])
     except getopt.GetoptError:
         print(u"\n" + u'Error in options\n')
         print(words[u'help'][u'text'])
