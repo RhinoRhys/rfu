@@ -25,7 +25,7 @@ def log(text):
 def final():
     global printtime    
     printtime = False
-    log(words[u'text'][u'bye'].format(added)) 
+    log(u"\n" + words[u'text'][u'bye'].format(added)) 
  
 #%%  API Function
 
@@ -83,6 +83,7 @@ radarr_url += u"{0}/api/movie".format(config[u'radarr'][u'server'])
 
 log(words[u'text'][u'hello'] +  u"\n")
 atexit.register(final)
+printtime = True
 
 #%% Begin
 
