@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
 #%% Data grab
 
-exts = ["avi", "mkv","mp4", "m4a", "mov", "wmv", "wma", "flv", "webm", "vob"]
+exts = ["avi", "mkv", "mp4", "m4a", "mov", "wmv", "wma", "flv", "webm", "vob"]
 
 if u'true' in config[u'radarr'][u'ssl'].lower(): radarr_url = u"https://"
 else: radarr_url = u"http://"
@@ -88,7 +88,7 @@ atexit.register(final)
 
 for root, dirs, files in os.walk(path):
     for name in files:
-        if name[-3:] in "txt":
+        if name[-3:] in exts:
             folder = root.replace(path,"")
             imdb = re.search(r"tt\d{7}", name)
             if imdb: imdb = imdb.group()
