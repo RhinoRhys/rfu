@@ -99,7 +99,7 @@ for root, dirs, files in os.walk(path):
             payload = imdb, lookup_json['title'], lookup_json['year']
             log(words[u'text'][u'data'].format(*payload))  
             inpath = os.path.join(root,name)
-            post_data = {u"qualityProfileId" : config[u'adding'][u'quality'],
+            post_data = {u"qualityProfileId" : config[u'radarr'][u'quality'],
                      u"path": inpath,
                      u"monitored" : 'true'}
             for dictkey in [u"tmdbId",u"title",u"titleSlug",u"images",u"year"]: post_data.update({dictkey : lookup_json[dictkey]})
