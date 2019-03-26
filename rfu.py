@@ -25,6 +25,20 @@ def log(text):
 def final():
     global printtime    
     printtime = False
+    if len(errors) != 0:
+        log(u"\n" + words[u'text'][u'errors'].format(len(errors)))
+        if not os.path.exists(os.path.join("output")): os.mkdir(os.path.join("output"))
+        g = open(os.path.join("output","errors.{}.txt".format(start_time)), "w+")
+        if sys.version_info[0] == 2:
+            g.write(words[u'text'][u'hello'] + "\n\n")
+            g.write(words[u'text'][u'errors'].format(len(errors)) + ":\n\n")
+            [g.write("{}\t{}".format(error[u"imdb"],error[u'path'])) for error in errors]
+        elif sys.version_info[0] == 3:
+            g.write(words[u'text'][u'hello'] + u"\n\n")
+            g.write(words[u'text'][u'errors'].format(len(errors)) + u":\n\n")
+            [g.write(u"{}\t{}\n".format(error[u"imdb"],error[u'path'])) for error in errors]
+        g.close()
+        
     log(u"\n" + words[u'text'][u'bye'].format(added)) 
  
 #%%  API Function
@@ -45,9 +59,12 @@ def api(com = "get", args = None ):
         url += "/lookup/imdb"
         key.update({"imdbId" : str(args)})
     
-    response = requests.get(url, params = key )
+    response = requests.get(url, params = key)
     response.content.decode("utf-8")
-    return response.json()
+    if response.text == "":
+        return 404
+    else:
+        return response.json()
     
 #%% Configuration
 
@@ -75,12 +92,16 @@ if __name__ == '__main__':
 
 #%% Data grab
 
-exts = ["avi", "mkv", "mp4", "m4a", "mov", "wmv", "wma", "flv", "webm", "vob"]
+exts = ["avi", "mkv", "mp4", "m4a", "mov", "wmv", "wma", "flv", "vob"]
 
 if u'true' in config[u'radarr'][u'ssl'].lower(): radarr_url = u"https://"
 else: radarr_url = u"http://"
 radarr_url += u"{0}/api/movie".format(config[u'radarr'][u'server'])
 
+data = api("Radarr")
+tmdb_ids = [movie["tmdbId"] for movie in data]
+errors = []
+    
 log(words[u'text'][u'hello'] +  u"\n")
 atexit.register(final)
 printtime = True
@@ -90,28 +111,34 @@ printtime = True
 for root, dirs, files in os.walk(path):
     for name in files:
         if name[-3:] in exts:
-            folder = root.replace(path,"")
             imdb = re.search(r"tt\d{7}", name)
-            if imdb: imdb = imdb.group()
-            else: break
-            
-            lookup_json = api(com = "lookup", args = imdb)
-            payload = imdb, lookup_json['title'], lookup_json['year']
-            log(words[u'text'][u'data'].format(*payload))  
-            inpath = os.path.join(root,name)
-            post_data = {u"qualityProfileId" : config[u'radarr'][u'quality'],
-                     u"path": inpath,
-                     u"monitored" : 'true'}
-            for dictkey in [u"tmdbId",u"title",u"titleSlug",u"images",u"year"]: post_data.update({dictkey : lookup_json[dictkey]})
-            if sys.version_info[0] == 2: data_payload = json.dumps(post_data)
-            elif sys.version_info[0] == 3: data_payload = str(post_data).replace("'","\"")
-            post = api(com = "post", args = data_payload)
-            if post == 201: 
-                log(words[u'text'][u'add_true'])
-                added += 1
+            inpath = os.path.join(root, name)
+            if not imdb:
+                errors.append({"imdb": "No IMDbID", "path": inpath})
             else:
-                log(words[u'text'][u'add_fail'].format(post))
-                fails += 1
-                if fails == 10:
-                    printtime = False
-                    fatal(words[u'text'][u'retry_err'])
+                imdb = imdb.group()
+                lookup_json = api(com = "lookup", args = imdb)
+                if lookup_json == 404:
+                    log(words[u'text'][u'data'].format(imdb, "Error: IMDB ID match failed", inpath))
+                    errors.append({"imdb": imdb, "path": inpath})
+                elif lookup_json["tmdbId"] not in tmdb_ids:
+                    payload = imdb, lookup_json['title'], lookup_json['year']
+                    log(words[u'text'][u'data'].format(*payload))  
+                    post_data = {u"qualityProfileId" : config[u'radarr'][u'quality'],
+                             u"path": inpath,
+                             u"monitored" : 'true'}
+                    for dictkey in [u"tmdbId",u"title",u"titleSlug",u"images",u"year"]: post_data.update({dictkey : lookup_json[dictkey]})
+                    if sys.version_info[0] == 2: data_payload = json.dumps(post_data)
+                    elif sys.version_info[0] == 3: data_payload = str(post_data).replace("'","\"")
+                    post = api(com = "post", args = data_payload)
+                    if post == 201: 
+                        log(words[u'text'][u'add_true'])
+                        tmdb_ids.append(lookup_json[u'tmdbId'])
+                        added += 1
+                    else:
+                        log(words[u'text'][u'add_fail'].format(post))
+                        fails += 1
+                        if fails == 10:
+                            printtime = False
+                            fatal(words[u'text'][u'retry_err'])
+        
