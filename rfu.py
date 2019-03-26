@@ -93,6 +93,7 @@ if __name__ == '__main__':
 #%% Data grab
 
 exts = ["avi", "mkv", "mp4", "m4a", "mov", "wmv", "wma", "flv", "vob"]
+#exts += ["txt"]
 
 if u'true' in config[u'radarr'][u'ssl'].lower(): radarr_url = u"https://"
 else: radarr_url = u"http://"
@@ -113,7 +114,9 @@ for root, dirs, files in os.walk(path):
         if name[-3:] in exts:
             imdb = re.search(r"tt\d{7}", name)
             inpath = os.path.join(root, name)
-            if not imdb:
+            if not imdb: imdb = re.search(r"tt\d{7}", root)
+            if not imdb: 
+                log(words[u'text'][u'data'].format("No IMDbID", "Error: IMDB ID not found", inpath))
                 errors.append({"imdb": "No IMDbID", "path": inpath})
             else:
                 imdb = imdb.group()
